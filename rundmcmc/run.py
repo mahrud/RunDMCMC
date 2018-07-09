@@ -1,4 +1,5 @@
 from rundmcmc.output import ChainOutputTable
+from multiprocessing import Process
 
 
 def run(chain, loggers):
@@ -53,6 +54,34 @@ def pipe_to_table(chain, handlers):
     table = ChainOutputTable()
     for row in handle_chain(chain, handlers):
         table.append(row)
+    return table
+
+
+def parallel_handlers(state):
+    global handlers
+    yield {key: handler(state) for key, handler in handlers.items()}
+
+def parallel_helper(state):
+    global table
+    for row in parallel_handlers(state):
+        table.append(row)
+
+def parallel_pipe_to_table(chain, handlers_in):
+    global handlers
+    handlers = handlers_in
+    global table
+    table = ChainOutputTable()
+    p = [False] * 4
+    chain.counter = 0
+    while True:
+        if p[chain.counter % 4]:
+            p[chain.counter % 4].join()
+        try:
+            state = next(chain)
+            p[chain.counter % 4] = Process(target = parallel_helper, args = (state, ))
+            p[chain.counter % 4].start()
+        except:
+            break
     return table
 
 

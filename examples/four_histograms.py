@@ -3,7 +3,7 @@ import functools
 import matplotlib.pyplot as plt
 
 from rundmcmc.defaults import BasicChain, PA_partition
-from rundmcmc.run import pipe_to_table
+from rundmcmc.run import pipe_to_table, parallel_pipe_to_table
 from rundmcmc.scores import efficiency_gap, mean_median, mean_thirdian
 from rundmcmc.validity import L1_reciprocal_polsby_popper
 
@@ -11,7 +11,7 @@ from rundmcmc.validity import L1_reciprocal_polsby_popper
 def main():
     initial_partition = PA_partition()
 
-    chain = BasicChain(initial_partition, total_steps=10000)
+    chain = BasicChain(initial_partition, total_steps=100)
 
     scores = {
         'Mean-Median': functools.partial(mean_median, proportion_column_name='VoteA%'),
@@ -22,7 +22,8 @@ def main():
 
     initial_scores = {key: score(initial_partition) for key, score in scores.items()}
 
-    table = pipe_to_table(chain, scores)
+    table = parallel_pipe_to_table(chain, scores)
+#    table = pipe_to_table(chain, scores)
 
     fig, axes = plt.subplots(2, 2)
 
@@ -38,7 +39,7 @@ def main():
         axes[quadrant].hist(table[key], bins=50)
         axes[quadrant].set_title(key)
         axes[quadrant].axvline(x=initial_scores[key], color='r')
-    plt.show()
+#    plt.show()
 
 
 if __name__ == '__main__':
